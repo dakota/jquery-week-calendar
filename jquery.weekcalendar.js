@@ -56,10 +56,12 @@
         minDate: null,
         maxDate: null,
         buttons: true,
+		dateButton: true,
         buttonText: {
           today: 'today',
           lastWeek: 'previous',
-          nextWeek: 'next'
+          nextWeek: 'next',
+		  selectDate: 'Select date'
         },
         switchDisplay: {},
         scrollToHourMillis: 500,
@@ -654,6 +656,9 @@
 
             calendarNavHtml += '<div class=\"ui-widget-header wc-toolbar\">';
               calendarNavHtml += '<div class=\"wc-display\"></div>';
+			  if(options.dateButton) {
+				  calendarNavHtml += '<div class=\"wc-calendar-popup\"><input class=\"wc-cal-popup\" type=\"hidden\"></div>';
+			  }
               calendarNavHtml += '<div class=\"wc-nav\">';
                 calendarNavHtml += '<button class=\"wc-prev\">' + options.buttonText.lastWeek + '</button>';
                 calendarNavHtml += '<button class=\"wc-today\">' + options.buttonText.today + '</button>';
@@ -663,6 +668,24 @@
             calendarNavHtml += '</div>';
 
             $(calendarNavHtml).appendTo($calendarContainer);
+
+		   $calendarContainer.find('.wc-cal-popup')
+				.datepicker({
+					showOn: 'button',
+					buttonText: options.buttonText.selectDate,
+					numberOfMonths: 3,
+					maxDate: 'today',
+					onSelect: function(dateText) {
+						var date = new Date(Date.parse(dateText));
+						self.element.weekCalendar('gotoDate', date);
+					}
+				})
+				.end()
+				.find('.ui-datepicker-trigger')
+					.button({
+						text: false,
+						icons: {primary: 'ui-icon-calendar'}
+					});
 
             $calendarContainer.find('.wc-nav .wc-today')
               .button({
