@@ -385,7 +385,9 @@
 
           self.element.find('.wc-cal-event').each(function() {
             if ($(this).data('calEvent').id === eventId) {
-                $(this).remove();
+                $(this).fadeOut('fast', function() {
+					$(this).remove();
+				});
                 return false;
             }
           });
@@ -637,10 +639,11 @@
 
         $weekDayColumns = $calendarContainer.find('.wc-day-column-inner');
         $weekDayColumns.each(function(i, val) {
+			var $this = $(this);
             if (!options.readonly) {
-              self._addDroppableToWeekDay($(this));
+              self._addDroppableToWeekDay($this);
               if (options.allowEventCreation) {
-                self._setupEventCreationForWeekDay($(this));
+                self._setupEventCreationForWeekDay($this);
               }
             }
         });
@@ -674,7 +677,7 @@
 					showOn: 'button',
 					buttonText: options.buttonText.selectDate,
 					numberOfMonths: 3,
-					maxDate: 'today',
+					maxDate: options.maxDate,
 					onSelect: function(dateText) {
 						var date = new Date(Date.parse(dateText));
 						self.element.weekCalendar('gotoDate', date);
@@ -877,10 +880,11 @@
         renderRow += '<div class=\"wc-time-slots\">';
 
         for (i = start; i < end; i++) {
+		  var businessClass = i >= options.businessHours.start && i <= options.businessHours.end ? ' wc-business-hours' : '';
           for (j = 0; j < options.timeslotsPerHour - 1; j++) {
-            renderRow += '<div class=\"wc-time-slot\"></div>';
+            renderRow += '<div class=\"wc-time-slot '+businessClass+'\"></div>';
           }
-          renderRow += '<div class=\"wc-time-slot wc-hour-end\"></div>';
+          renderRow += '<div class=\"wc-time-slot wc-hour-end '+businessClass+'\"></div>';
         }
 
         renderRow += '</div>';
@@ -1222,27 +1226,41 @@
           var currentDay = self._cloneDate(self.element.data('startDate'));
           var showAsSeparatedUser = options.showAsSeparateUsers && options.users && options.users.length;
           var todayClass = 'ui-state-active wc-today';
-
+		  var disabledClass = 'ui-state-disabled wc-disabled';
+		  
           self.element.find('.wc-header td.wc-day-column-header').each(function(i, val) {
-            $(this).html(self._getHeaderDate(currentDay));
+			var $this = $(this);
+            $this.html(self._getHeaderDate(currentDay));
             if (self._isToday(currentDay)) {
-                $(this).addClass(todayClass);
+                $this.addClass(todayClass);
             } else {
-                $(this).removeClass(todayClass);
+                $this.removeClass(todayClass);
             }
+			if(!self._isValidDate(currentDay)) {
+				$this.addClass(disabledClass);
+			}
+			else {
+				$this.removeClass(disabledClass);
+			}
             currentDay = self._addDays(currentDay, 1);
-
           });
 
           currentDay = self._cloneDate(self.element.data('startDate'));
           if (showAsSeparatedUser)
           {
             self.element.find('.wc-header td.wc-user-header').each(function(i, val) {
-              if (self._isToday(currentDay)) {
-                  $(this).addClass(todayClass);
-              } else {
-                  $(this).removeClass(todayClass);
-              }
+				var $this = $(this);
+				if (self._isToday(currentDay)) {
+					$this.addClass(todayClass);	
+				} else {
+					$this.removeClass(todayClass);
+				}
+				if(!self._isValidDate(currentDay)) {
+					$this.addClass(disabledClass);
+				}
+				else {
+					$this.removeClass(disabledClass);
+				}			  
               currentDay = ((i + 1) % options.users.length) ? currentDay : self._addDays(currentDay, 1);
             });
           }
@@ -1250,22 +1268,31 @@
           currentDay = self._cloneDate(self.element.data('startDate'));
 
           $weekDayColumns.each(function(i, val) {
-
-            $(this).data('startDate', self._cloneDate(currentDay));
-            $(this).data('endDate', new Date(currentDay.getTime() + (MILLIS_IN_DAY)));
-            if (self._isToday(currentDay)) {
-                $(this).parent()
-                    .addClass(todayClass)
-                    .removeClass('ui-state-default');
-            } else {
-                $(this).parent()
-                    .removeClass(todayClass)
-                    .addClass('ui-state-default');
-            }
-
-            if (!showAsSeparatedUser || !((i + 1) % options.users.length)) {
-              currentDay = self._addDays(currentDay, 1);
-            }
+			var $this = $(this);
+			$this.data('startDate', self._cloneDate(currentDay));
+			$this.data('endDate', new Date(currentDay.getTime() + (MILLIS_IN_DAY)));
+			if (self._isToday(currentDay)) {
+				$this.parent()
+					.addClass(todayClass)
+					.removeClass('ui-state-default');
+			} else {
+				$this.parent()
+					.removeClass(todayClass)
+					.addClass('ui-state-default');
+			}
+			if(!self._isValidDate(currentDay)) {
+				$this.parent()
+					.addClass(disabledClass)
+					.removeClass('ui-state-default');
+			}
+			else {
+				$this.parent()
+					.removeClass(disabledClass)
+					.addClass('ui-state-default');
+			}	
+			if (!showAsSeparatedUser || !((i + 1) % options.users.length)) {
+			currentDay = self._addDays(currentDay, 1);
+			}
           });
 
           //now update the freeBusy placeholders
@@ -1697,6 +1724,7 @@
         */
       _addDraggableToCalEvent: function(calEvent, $calEvent) {
           var options = this.options;
+		  
           $calEvent.draggable({
             handle: '.wc-time',
             containment: 'div.wc-time-slots',
@@ -1707,7 +1735,6 @@
             opacity: 0.5,
             grid: [$calEvent.outerWidth() + 1, options.timeslotHeight],
             start: function(event, ui) {
-                var $calEvent = ui.draggable;
                 options.eventDrag(calEvent, $calEvent);
             }
           });
@@ -1894,6 +1921,33 @@
           this._clearTime(today);
           return today.getTime() === clonedDate.getTime();
       },
+	  
+	  _isValidDate: function(date) {
+		var clonedDate = this._cloneDate(date);
+		var validDate = true;
+		this._clearTime(clonedDate);
+
+		// not less than minDate
+		if (this.options.minDate) {
+			minDate = this._cleanDate(this.options.minDate);
+			// midnight on minDate
+			minDate = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+
+			validDate = validDate && (clonedDate.getTime() >= minDate.getTime());
+		}
+
+		// not more than maxDate
+		if (this.options.maxDate) {
+			maxDate = this._cleanDate(this.options.maxDate);
+
+			// microsecond before midnight on maxDate
+			maxDate = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate(), 23, 59, 59, 999);
+
+			validDate = validDate && (clonedDate.getTime() <= maxDate.getTime());
+		}
+
+		return validDate;		  
+	  },
 
       /*
        * Clean events to ensure correct format
