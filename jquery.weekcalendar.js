@@ -69,6 +69,8 @@
         overlapEventsSeparate: false,
         readonly: false,
         allowEventCreation: true,
+		customDisplays: {},
+		customDisplay: null,
         draggable: function(calEvent, element) {
           return true;
         },
@@ -362,6 +364,7 @@
           var self = this;
           var hour = self._getCurrentScrollHour();
           self.options.daysToShow = daysToShow;
+		  self.options.customDisplay = null;
           $(self.element).html('');
           self._renderCalendar();
           self._loadCalEvents();
@@ -375,6 +378,26 @@
             });
         }
       },
+	  
+	  /**
+	   * Render a custom view
+	   */
+	  customDisplay: function(customDisplay) {
+		  var self = this;
+		  if($.isFunction(self.options.customDisplays[customDisplay])) {
+			  self.options.customDisplay = customDisplay;
+			  self.options.daysToShow = null;
+			  
+			  $(self.element).html('');
+			  $calendarContainer = $('<div class=\"ui-widget wc-container\">').appendTo(self.element);
+
+			  //render the different parts
+			  // nav links
+			  self._renderCalendarButtons($calendarContainer);	
+			  
+			  self.options.customDisplays[customDisplay](customDisplay, $calendarContainer);
+		  }
+	  },
 
       /*
         * Remove an event based on it's id
@@ -725,7 +748,7 @@
                       var _label = $('<label for="' + _id + '"></label>');
                       _label.html(label);
                       _input.val(option);
-                      if (parseInt(self.options.daysToShow, 10) === parseInt(option, 10)) {
+                      if (parseInt(self.options.daysToShow, 10) === parseInt(option, 10) || self.options.customDisplay == option) {
                         _input.attr('checked', 'checked');
                       }
                       $container
@@ -733,8 +756,15 @@
                         .append(_label);
                     });
               $container.find('input').change(function() {
-                  self.setDaysToShow(parseInt($(this).val(), 10));
-                });
+				  var value = $(this).val();
+				  var intValue = parseInt(value, 10);
+				  if(isNaN(intValue)) {
+					  self.customDisplay(value);
+				  }
+				  else {
+					self.setDaysToShow(intValue);
+				  }
+              });
             }
             $calendarContainer.find('.wc-nav, .wc-display').buttonset();
             var _height = $calendarContainer.find('.wc-nav').outerHeight();
