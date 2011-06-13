@@ -27,7 +27,7 @@
 
   $.widget('ui.weekCalendar', (function() {
     var _currentAjaxCall;
-    return {
+    var weekCalendar = {
       options: {
         date: new Date(),
         timeFormat: null,
@@ -2535,10 +2535,9 @@
       _needDSTdayShift: function(date1, date2) {
       return date1.getTimezoneOffset() != date2.getTimezoneOffset();
       }
-
-
-
     }; // end of widget function return
+	
+	return weekCalendar
     })() //end of widget function closure execution
   ); // end of $.widget("ui.weekCalendar"...
 
