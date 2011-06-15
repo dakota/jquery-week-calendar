@@ -1754,6 +1754,12 @@
         */
       _addDraggableToCalEvent: function(calEvent, $calEvent) {
           var options = this.options;
+		  var calendarPosition = this.element.position();
+		  var timeslotHeaderWidth = this.element.find('.wc-grid-timeslot-header').width();
+		  var leftHotspot = calendarPosition.left + timeslotHeaderWidth;
+		  var rightHotspot = calendarPosition.left + this.element.width() - timeslotHeaderWidth;
+		  var timer = null;
+		  var self = this;
 		  
           $calEvent.draggable({
             handle: '.wc-time',
@@ -1766,7 +1772,23 @@
             grid: [$calEvent.outerWidth() + 1, options.timeslotHeight],
             start: function(event, ui) {
                 options.eventDrag(calEvent, $calEvent);
-            }
+            }, 
+			drag: function(event, ui) {
+				if(event.pageX <= leftHotspot && timer === null) {
+					timer = setTimeout(function() {
+						self.prevWeek();
+					}, 1000);					
+				}
+				else if(event.pageX >= rightHotspot && timer === null){
+					timer = setTimeout(function() {
+						self.nextWeek();
+					}, 1000);
+				}
+				else if (event.pageX < rightHotspot && event.pageX > leftHotspot && timer !== null){
+					clearTimeout(timer);
+					timer = null;
+				}
+			}
           });
       },
 
@@ -1881,7 +1903,7 @@
         * Clear all cal events from the calendar
         */
       _clearCalendar: function() {
-          this.element.find('.wc-day-column-inner div').remove();
+          this.element.find('.wc-day-column-inner div:not(.ui-draggable-dragging)').remove();
           this._clearFreeBusys();
       },
 
