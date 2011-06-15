@@ -1959,7 +1959,7 @@
 
 		// not less than minDate
 		if (this.options.minDate) {
-			minDate = this._cleanDate(this.options.minDate);
+			var minDate = this._cleanDate(this.options.minDate);
 			// midnight on minDate
 			minDate = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
 
@@ -1968,7 +1968,7 @@
 
 		// not more than maxDate
 		if (this.options.maxDate) {
-			maxDate = this._cleanDate(this.options.maxDate);
+			var maxDate = this._cleanDate(this.options.maxDate);
 
 			// microsecond before midnight on maxDate
 			maxDate = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate(), 23, 59, 59, 999);
